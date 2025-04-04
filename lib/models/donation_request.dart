@@ -3,6 +3,7 @@ class DonationRequest {
   final String hospitalName;
   final String bloodType;
   final String location;
+  final String contact;
   final String timestamp;
 
   DonationRequest({
@@ -10,6 +11,7 @@ class DonationRequest {
     required this.hospitalName,
     required this.bloodType,
     required this.location,
+    required this.contact,
     required this.timestamp,
   });
 
@@ -19,7 +21,18 @@ class DonationRequest {
       hospitalName: data['hospitalName'] ?? 'Unknown Hospital',
       bloodType: data['bloodType'] ?? 'Unknown',
       location: data['location'] ?? 'Unknown',
+      contact: data['contact'] ?? '',
       timestamp: data['timestamp'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'hospitalName': hospitalName,
+      'bloodType': bloodType,
+      'location': location,
+      'contact': contact,
+      'timestamp': timestamp,
+    };
   }
 }
