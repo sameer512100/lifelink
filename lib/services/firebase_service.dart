@@ -24,28 +24,32 @@ class FirebaseService {
   }
 
   // Add default dummy donation requests (call this once if needed)
-  Future<void> addDefaultDonationRequests() async {
-    try {
-      await _donationsRef.set({
-        "req1": {
-          "donorName": "Alice Johnson",
-          "bloodType": "A+",
-          "location": "New York",
-          "contact": "1234567890",
-          "timestamp": DateTime.now().toIso8601String(),
-        },
-        "req2": {
-          "donorName": "Bob Smith",
-          "bloodType": "B-",
-          "location": "Chicago",
-          "contact": "9876543210",
-          "timestamp": DateTime.now().toIso8601String(),
-        }
-      });
+ Future<void> addDefaultDonationRequests() async {
+  try {
+    await _donationsRef.set({
+      "req1": {
+        "hospitalName": "New York General Hospital", // ✅ Added this field
+        "donorName": "Alice Johnson",
+        "bloodType": "A+",
+        "location": "New York",
+        "contact": "1234567890",
+        "timestamp": DateTime.now().toIso8601String(),
+      },
+      "req2": {
+        "hospitalName": "Chicago Care Center", // ✅ Added this field
+        "donorName": "Bob Smith",
+        "bloodType": "B-",
+        "location": "Chicago",
+        "contact": "9876543210",
+        "timestamp": DateTime.now().toIso8601String(),
+      }
+    });
 
-      print("✅ Default donation requests added to Firebase!");
-    } catch (e) {
-      print("❌ Error adding default donation requests: $e");
-    }
+    print("✅ Default donation requests added to Firebase!");
+  } catch (e) {
+    print("❌ Error adding default donation requests: $e");
   }
 }
+
+}
+
