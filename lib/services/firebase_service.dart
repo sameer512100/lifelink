@@ -5,6 +5,7 @@ class FirebaseService {
   final DatabaseReference _donationsRef =
       FirebaseDatabase.instance.ref().child("donationRequests");
 
+  // Fetch donation requests from Firebase
   Future<List<DonationRequest>> fetchDonationRequests() async {
     DataSnapshot snapshot = await _donationsRef.get();
 
@@ -19,6 +20,32 @@ class FirebaseService {
       return donationRequests;
     } else {
       return [];
+    }
+  }
+
+  // Add default dummy donation requests (call this once if needed)
+  Future<void> addDefaultDonationRequests() async {
+    try {
+      await _donationsRef.set({
+        "req1": {
+          "donorName": "Alice Johnson",
+          "bloodType": "A+",
+          "location": "New York",
+          "contact": "1234567890",
+          "timestamp": DateTime.now().toIso8601String(),
+        },
+        "req2": {
+          "donorName": "Bob Smith",
+          "bloodType": "B-",
+          "location": "Chicago",
+          "contact": "9876543210",
+          "timestamp": DateTime.now().toIso8601String(),
+        }
+      });
+
+      print("✅ Default donation requests added to Firebase!");
+    } catch (e) {
+      print("❌ Error adding default donation requests: $e");
     }
   }
 }
