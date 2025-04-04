@@ -34,7 +34,9 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
   Future<void> _createDonationRequest() async {
     if (_bloodTypeController.text.isEmpty ||
         _locationController.text.isEmpty ||
-        _contactController.text.isEmpty) return;
+        _contactController.text.isEmpty) {
+      return;
+    }
 
     final newRequest = DonationRequest(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
