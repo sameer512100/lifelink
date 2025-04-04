@@ -1,7 +1,30 @@
 import 'package:flutter/material.dart';
+import '../../services/firebase_service.dart';
+import '../../models/donation_request.dart';
 
-class DonorDashboard extends StatelessWidget {
+class DonorDashboard extends StatefulWidget {
   const DonorDashboard({super.key});
+
+  @override
+  DonorDashboardState createState() => DonorDashboardState();
+}
+
+class DonorDashboardState extends State<DonorDashboard> {
+  final FirebaseService _firebaseService = FirebaseService();
+  List<DonationRequest> donationRequests = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDonationRequests();
+  }
+
+  Future<void> _loadDonationRequests() async {
+    List<DonationRequest> requests = await _firebaseService.fetchDonationRequests();
+    setState(() {
+      donationRequests = requests;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,16 +41,15 @@ class DonorDashboard extends StatelessWidget {
           children: [
             // Welcome Card
             Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               color: Colors.red[100],
               child: ListTile(
                 leading: const CircleAvatar(
                   radius: 28,
-                  backgroundImage: AssetImage('assets/user.png'), // Temporary
+                  backgroundImage: AssetImage('assets/user.png'),
                 ),
-                title: const Text("Welcome back, Donor!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                title: const Text("Welcome back, Donor!",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 subtitle: const Text("You're doing great ❤️"),
               ),
             ),
@@ -43,22 +65,25 @@ class DonorDashboard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
-            // Donate Button
-            Center(
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () {
-                  // TODO: Navigate to donation request screen
-                },
-                icon: const Icon(Icons.favorite),
-                label: const Text("Find Requests"),
-              ),
+            // Donation Requests List
+            Expanded(
+              child: donationRequests.isEmpty
+                  ? const Center(child: Text("No donation requests found."))
+                  : ListView.builder(
+                      itemCount: donationRequests.length,
+                      itemBuilder: (context, index) {
+                        final request = donationRequests[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text("${request.hospitalName} - ${request.bloodType}"),
+                            subtitle: Text(request.location),
+                            trailing: Text(request.timestamp),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
