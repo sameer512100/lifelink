@@ -81,7 +81,7 @@ class DonorDashboardState extends State<DonorDashboard> {
                 );
               },
               icon: const Icon(Icons.map),
-              label: const Text("View Nearby Donors on Map"),
+              label: const Text("View Nearby Requests on Map"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,

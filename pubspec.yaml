@@ -37,7 +37,7 @@ dependencies:
   cloud_firestore: ^4.9.0  # instead of firebase_database
   animated_text_kit: ^4.2.1
   # Maps + State Management
-  google_maps_flutter: ^2.5.0
+  google_maps_flutter: ^2.1.1 
   provider: ^6.1.0
   geolocator: ^10.1.0
   geocoding: ^2.1.0
