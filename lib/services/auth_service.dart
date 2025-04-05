@@ -5,34 +5,32 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
- // DONOR REGISTER
+  // DONOR REGISTER
   Future<String?> registerDonor(String email, String password, String name, String bloodType) async {
-  try {
-    final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    await FirebaseFirestore.instance.collection('donors').doc(userCredential.user!.uid).set({
-      'name': name,
-      'email': email,
-      'bloodType': bloodType,
-      'createdAt': Timestamp.now(),
-    });
+      await FirebaseFirestore.instance.collection('donors').doc(userCredential.user!.uid).set({
+        'name': name,
+        'email': email,
+        'bloodType': bloodType,
+        'createdAt': Timestamp.now(),
+      });
 
-    return null;
-  } catch (e) {
-    return e.toString();
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
   }
-}
-
-
-
 
   // ✅ ADD THIS:
   User? getCurrentUser() {
     return _auth.currentUser;
   }
+
   // Register Hospital
   Future<String?> registerHospital(String email, String password) async {
     try {

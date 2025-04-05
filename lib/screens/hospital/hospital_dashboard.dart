@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../services/firebase_service.dart';
-import '../../models/donation_request.dart';
+import '../../services/firebase_service.dart' as services;
+import '../../models/donation_request.dart' as model;
 
 class HospitalDashboard extends StatefulWidget {
   final String hospitalName;
@@ -13,12 +13,24 @@ class HospitalDashboard extends StatefulWidget {
 }
 
 class _HospitalDashboardState extends State<HospitalDashboard> {
-  final FirebaseService _firebaseService = FirebaseService();
+  final services.FirebaseService _firebaseService = services.FirebaseService();
+  final _formKey = GlobalKey<FormState>();
+
   final TextEditingController _bloodTypeController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _contactController = TextEditingController();
 
   String get hospitalName => widget.hospitalName;
+
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _bloodTypeController.dispose();
+    _locationController.dispose();
+    _contactController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,97 +40,175 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hospital Info Card
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              color: Colors.deepPurple[100],
-              child: ListTile(
-                leading: const Icon(Icons.local_hospital, size: 40, color: Colors.deepPurple),
-                title: Text(hospitalName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("Welcome, let's save lives!"),
-              ),
-            ),
-
+            _buildHospitalCard(),
             const SizedBox(height: 20),
-
-            // Create Donation Request Section
-            const Text("Create Donation Request", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            TextField(controller: _bloodTypeController, decoration: const InputDecoration(labelText: 'Blood Type')),
-            TextField(controller: _locationController, decoration: const InputDecoration(labelText: 'Location')),
-            TextField(controller: _contactController, decoration: const InputDecoration(labelText: 'Contact')),
-            ElevatedButton(
-              onPressed: _createDonationRequest,
-              child: const Text("Submit Request"),
+            const Text(
+              "Create Donation Request",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-
-            const SizedBox(height: 20),
-
-            // Active Donation Requests Stream
-            const Text("Your Active Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-
-            Expanded(
-              child: StreamBuilder<List<DonationRequest>>(
-                stream: _firebaseService.getHospitalDonationRequests(hospitalName),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-
-                  final myRequests = snapshot.data ?? [];
-
-                  return myRequests.isEmpty
-                      ? const Center(child: Text("No requests yet."))
-                      : ListView.builder(
-                          itemCount: myRequests.length,
-                          itemBuilder: (context, index) {
-                            final req = myRequests[index];
-                            return Card(
-                              child: ListTile(
-                                title: Text("${req.bloodType} - ${req.location}"),
-                                subtitle: Text("Contact: ${req.contact}"),
-                                trailing: Text(req.timestamp.toDate().toString().split(" ")[0]),
-                              ),
-                            );
-                          },
-                        );
-                },
-              ),
+            const SizedBox(height: 10),
+            _buildRequestForm(),
+            const SizedBox(height: 30),
+            const Text(
+              "Your Active Requests",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 10),
+            _buildRequestsList(),
           ],
         ),
       ),
     );
   }
 
-  // Create and submit a new donation request
-  Future<void> _createDonationRequest() async {
-    if (_bloodTypeController.text.isEmpty ||
-        _locationController.text.isEmpty ||
-        _contactController.text.isEmpty) {
-      return;
-    }
+  Widget _buildHospitalCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.deepPurple[100],
+      child: ListTile(
+        leading: const Icon(Icons.local_hospital, size: 40, color: Colors.deepPurple),
+        title: Text(hospitalName, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: const Text("Welcome, let's save lives!"),
+      ),
+    );
+  }
 
-    final newRequest = DonationRequest(
+  Widget _buildRequestForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _bloodTypeController,
+            decoration: const InputDecoration(
+              labelText: 'Blood Type',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.bloodtype),
+            ),
+            validator: (value) =>
+                value == null || value.trim().isEmpty ? 'Please enter blood type' : null,
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _locationController,
+            decoration: const InputDecoration(
+              labelText: 'Location',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.location_on),
+            ),
+            validator: (value) =>
+                value == null || value.trim().isEmpty ? 'Please enter location' : null,
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _contactController,
+            decoration: const InputDecoration(
+              labelText: 'Contact Number',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.phone),
+            ),
+            validator: (value) =>
+                value == null || value.trim().isEmpty ? 'Please enter contact number' : null,
+          ),
+          const SizedBox(height: 15),
+          _isSubmitting
+              ? const CircularProgressIndicator()
+              : SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.send),
+                    label: const Text("Submit Request"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _createDonationRequest,
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequestsList() {
+    return SizedBox(
+      height: 300,
+      child: StreamBuilder<List<model.DonationRequest>>(
+        stream: _firebaseService.getHospitalDonationRequests(hospitalName),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final requests = snapshot.data ?? [];
+
+          if (requests.isEmpty) {
+            return const Center(child: Text("No active requests."));
+          }
+
+          return ListView.builder(
+            itemCount: requests.length,
+            itemBuilder: (context, index) {
+              final req = requests[index];
+              return Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.bloodtype, color: Colors.red),
+                  title: Text("${req.bloodType} - ${req.location}"),
+                  subtitle: Text("Contact: ${req.contact}"),
+                  trailing: Text(req.timestamp.toDate().toString().split(" ")[0]),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _createDonationRequest() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+
+    final newRequest = model.DonationRequest(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       hospitalName: hospitalName,
-      bloodType: _bloodTypeController.text,
-      location: _locationController.text,
-      contact: _contactController.text,
+      bloodType: _bloodTypeController.text.trim(),
+      location: _locationController.text.trim(),
+      contact: _contactController.text.trim(),
       timestamp: Timestamp.now(),
     );
 
-    await _firebaseService.addDonationRequest(newRequest);
-    _bloodTypeController.clear();
-    _locationController.clear();
-    _contactController.clear();
+    try {
+      await _firebaseService.addDonationRequest(newRequest);
+
+      _bloodTypeController.clear();
+      _locationController.clear();
+      _contactController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Request submitted successfully!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    } finally {
+      setState(() => _isSubmitting = false);
+    }
   }
 }

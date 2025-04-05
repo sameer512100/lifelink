@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:animated_text_kit/animated_text_kit.dart'; // Add this import for animation
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:lifelink/screens/login_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -9,17 +9,38 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  late AnimationController _iconAnimationController;
+  late Animation<double> _fadeInAnimation;
+
   @override
   void initState() {
     super.initState();
-    // After animation completes, navigate to the Login page
+
+    _iconAnimationController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    );
+
+    _fadeInAnimation = CurvedAnimation(
+      parent: _iconAnimationController,
+      curve: Curves.easeIn,
+    );
+
+    _iconAnimationController.forward();
+
     Future.delayed(const Duration(seconds: 4), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LoginPage()), // Navigate to login page
+        MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     });
+  }
+
+  @override
+  void dispose() {
+    _iconAnimationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -27,22 +48,33 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.redAccent,
       body: Center(
-        child: AnimatedTextKit(
-          animatedTexts: [
-            TyperAnimatedText(
-              'LIFELINK',
-              textStyle: const TextStyle(
-                fontSize: 50.0,
-                fontWeight: FontWeight.bold,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FadeTransition(
+              opacity: _fadeInAnimation,
+              child: const Icon(
+                Icons.favorite,
+                size: 80,
                 color: Colors.white,
               ),
-              speed: const Duration(milliseconds: 100),
+            ),
+            const SizedBox(height: 30),
+            AnimatedTextKit(
+              animatedTexts: [
+                TyperAnimatedText(
+                  'LIFELINK',
+                  textStyle: const TextStyle(
+                    fontSize: 48.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  speed: const Duration(milliseconds: 100),
+                ),
+              ],
+              totalRepeatCount: 1,
             ),
           ],
-          totalRepeatCount: 1, // Only animate once
-          onFinished: () {
-            // Triggered when animation finishes, no need for additional handling here
-          },
         ),
       ),
     );
