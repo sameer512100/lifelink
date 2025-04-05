@@ -18,27 +18,32 @@ class _HospitalLoginPageState extends State<HospitalLoginPage> {
   String? _error;
 
   void _loginHospital() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  setState(() {
+    _isLoading = true;
+    _error = null;
+  });
 
-    final result = await _authService.loginDonor(  // 🔁 you can later create loginHospital if needed
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
+  final result = await _authService.loginDonor(
+    _emailController.text.trim(),
+    _passwordController.text.trim(),
+  );
+
+  setState(() => _isLoading = false);
+
+  if (result == null) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HospitalDashboard(
+          hospitalName: _emailController.text.trim(), // ✅ Pass dynamic name here
+        ),
+      ),
     );
-
-    setState(() => _isLoading = false);
-
-    if (result == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HospitalDashboard()),
-      );
-    } else {
-      setState(() => _error = result);
-    }
+  } else {
+    setState(() => _error = result);
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

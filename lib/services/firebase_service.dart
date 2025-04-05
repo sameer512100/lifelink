@@ -1,45 +1,101 @@
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/donation_request.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirebaseService {
-  final DatabaseReference _donationsRef =
-      FirebaseDatabase.instance.ref().child("donationRequests");
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<List<DonationRequest>> fetchDonationRequests() async {
-    DataSnapshot snapshot = await _donationsRef.get();
-    if (snapshot.exists && snapshot.value is Map) {
-      final Map<dynamic, dynamic> requestsMap = snapshot.value as Map;
-      return requestsMap.entries.map((e) => DonationRequest.fromMap(e.key, e.value)).toList();
-    } else {
-      return [];
+  // 🔁 Stream donation requests for a specific hospital
+  Stream<List<DonationRequest>> getHospitalDonationRequests(String hospitalName) {
+    return _firestore
+        .collection('donationRequests')
+        .where('hospitalName', isEqualTo: hospitalName)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => DonationRequest.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  // 🔁 Stream all donation requests (for donors to see all)
+  Stream<List<DonationRequest>> fetchDonationRequests() {
+    try {
+      print("Fetching donation requests from 'donationRequests'...");
+      return _firestore
+          .collection('donationRequests')
+          .snapshots()
+          .map((snapshot) {
+            print("Snapshot received - Docs count: ${snapshot.docs.length}");
+            if (snapshot.docs.isEmpty) {
+              print("No documents found in 'donationRequests' collection.");
+            } else {
+              print("Documents found: ${snapshot.docs.map((doc) => doc.data())}");
+            }
+            return snapshot.docs
+                .map((doc) {
+                  try {
+                    return DonationRequest.fromMap(doc.id, doc.data());
+                  } catch (e) {
+                    print("Error mapping document ${doc.id}: $e");
+                    return null; // Skip invalid documents
+                  }
+                })
+                .where((request) => request != null)
+                .cast<DonationRequest>()
+                .toList();
+          })
+          .handleError((error) {
+            print("Error fetching donation requests: $error");
+            throw error; // Propagate to StreamBuilder
+          });
+    } catch (e) {
+      print("Unexpected error in fetchDonationRequests: $e");
+      rethrow;
     }
   }
 
+  // ➕ Add a new donation request
   Future<void> addDonationRequest(DonationRequest request) async {
-    await _donationsRef.child(request.id).set(request.toMap());
+    try {
+      await _firestore
+          .collection('donationRequests')
+          .doc(request.id)
+          .set(request.toMap());
+      print("Donation request added: ${request.id}");
+    } catch (e) {
+      print("❌ Error adding donation request: $e");
+      rethrow; // Propagate error
+    }
   }
 
-  Future<void> addDefaultDonationRequests() async {
+  // ✅ Accept a donation request
+  Future<void> acceptDonationRequest(String requestId) async {
     try {
-      await _donationsRef.set({
-        "req1": {
-          "hospitalName": "New York General Hospital",
-          "bloodType": "A+",
-          "location": "New York",
-          "contact": "1234567890",
-          "timestamp": DateTime.now().toIso8601String(),
-        },
-        "req2": {
-          "hospitalName": "Chicago Care Center",
-          "bloodType": "B-",
-          "location": "Chicago",
-          "contact": "9876543210",
-          "timestamp": DateTime.now().toIso8601String(),
-        }
+      await _firestore.collection('donationRequests').doc(requestId).update({
+        'status': 'accepted',
       });
-      print("✅ Default donation requests added to Firebase!");
     } catch (e) {
-      print("❌ Error adding default donation requests: $e");
+      print("❌ Error accepting donation request: $e");
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCurrentDonorInfo() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+
+    final doc = await FirebaseFirestore.instance.collection('donors').doc(uid).get();
+    return doc.data();
+  }
+
+  // ❌ Reject a donation request
+  Future<void> rejectDonationRequest(String requestId) async {
+    try {
+      await _firestore.collection('donationRequests').doc(requestId).update({
+        'status': 'rejected',
+      });
+    } catch (e) {
+      print("❌ Error rejecting donation request: $e");
+      rethrow;
     }
   }
 }

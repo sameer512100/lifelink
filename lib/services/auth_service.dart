@@ -1,45 +1,48 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Register Donor
-  Future<String?> registerDonor(String email, String password) async {
-    try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      return null; // success
-    } on FirebaseAuthException catch (e) {
-      return e.message;
-    } catch (e) {
-      return "An unexpected error occurred.";
-    }
+ // DONOR REGISTER
+  Future<String?> registerDonor(String email, String password, String name, String bloodType) async {
+  try {
+    final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    await FirebaseFirestore.instance.collection('donors').doc(userCredential.user!.uid).set({
+      'name': name,
+      'email': email,
+      'bloodType': bloodType,
+      'createdAt': Timestamp.now(),
+    });
+
+    return null;
+  } catch (e) {
+    return e.toString();
   }
+}
 
-  // Login Donor
-  Future<String?> loginDonor(String email, String password) async {
-    try {
-      print("🔐 Firebase login with: $email");
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      print("✅ Logged in! UID: ${credential.user?.uid}");
-      return null;
-    } on FirebaseAuthException catch (e) {
-      print("⚠️ FirebaseAuthException: ${e.code} - ${e.message}");
-      return e.message;
-    } catch (e, stackTrace) {
-      print("🔥 Unexpected error: $e");
-      print("🧵 StackTrace:\n$stackTrace");
-      return "An unexpected error occurred: $e";
-    }
+
+
+
+  // ✅ ADD THIS:
+  User? getCurrentUser() {
+    return _auth.currentUser;
   }
-
   // Register Hospital
   Future<String?> registerHospital(String email, String password) async {
     try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      return null; // success
+      UserCredential userCred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      await _firestore.collection('users').doc(userCred.user!.uid).set({
+        'email': email,
+        'role': 'hospital',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
     } catch (e) {
@@ -47,23 +50,15 @@ class AuthService {
     }
   }
 
-  // Login Hospital
-  Future<String?> loginHospital(String email, String password) async {
+  // Login Donor (You can make this a common login if needed)
+  Future<String?> loginDonor(String email, String password) async {
     try {
-      print("🔐 Firebase login with: $email");
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      print("✅ Logged in! UID: ${credential.user?.uid}");
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       return null;
     } on FirebaseAuthException catch (e) {
-      print("⚠️ FirebaseAuthException: ${e.code} - ${e.message}");
       return e.message;
-    } catch (e, stackTrace) {
-      print("🔥 Unexpected error: $e");
-      print("🧵 StackTrace:\n$stackTrace");
-      return "An unexpected error occurred: $e";
+    } catch (e) {
+      return "An unexpected error occurred.";
     }
   }
 
