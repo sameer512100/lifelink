@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart'; // ✅ Added for location support
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -13,10 +14,17 @@ class AuthService {
         password: password,
       );
 
+      // ✅ Get current location
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
       await FirebaseFirestore.instance.collection('donors').doc(userCredential.user!.uid).set({
         'name': name,
         'email': email,
         'bloodType': bloodType,
+        'location': {
+          'lat': position.latitude,
+          'lng': position.longitude,
+        },
         'createdAt': Timestamp.now(),
       });
 

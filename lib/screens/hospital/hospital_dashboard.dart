@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firebase_service.dart' as services;
 import '../../models/donation_request.dart' as model;
+import 'package:geolocator/geolocator.dart';
 
 class HospitalDashboard extends StatefulWidget {
   final String hospitalName;
@@ -180,10 +181,28 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
   }
 
   Future<void> _createDonationRequest() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSubmitting = true);
+  setState(() => _isSubmitting = true);
 
+  try {
+    // 1. Ask permission
+    LocationPermission permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Location permission denied")),
+      );
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    // 2. Get current location
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    // 3. Create request with location and required parameters
     final newRequest = model.DonationRequest(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       hospitalName: hospitalName,
@@ -191,24 +210,31 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
       location: _locationController.text.trim(),
       contact: _contactController.text.trim(),
       timestamp: Timestamp.now(),
+      hospitalId: 'hospital_unique_id', // Use actual hospital ID here
+      createdAt: Timestamp.now(), // Timestamp for when the request is created
+      latitude: position.latitude,
+      longitude: position.longitude,
     );
 
-    try {
-      await _firebaseService.addDonationRequest(newRequest);
+    await _firebaseService.addDonationRequest(newRequest);
 
-      _bloodTypeController.clear();
-      _locationController.clear();
-      _contactController.clear();
+    // Clear form fields
+    _bloodTypeController.clear();
+    _locationController.clear();
+    _contactController.clear();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Request submitted successfully!")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
-    } finally {
-      setState(() => _isSubmitting = false);
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Request submitted successfully!")),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
+    );
+  } finally {
+    setState(() => _isSubmitting = false);
   }
+}
+
+
+
 }

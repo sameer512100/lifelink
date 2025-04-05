@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firebase_service.dart';
 import '../../models/donation_request.dart';
+import '../map_screen.dart';
 
 class DonorDashboard extends StatefulWidget {
   const DonorDashboard({super.key});
@@ -71,6 +72,25 @@ class DonorDashboardState extends State<DonorDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeaderCard(),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MapScreen()),
+                );
+              },
+              icon: const Icon(Icons.map),
+              label: const Text("View Nearby Donors on Map"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -222,7 +242,7 @@ class DonorDashboardState extends State<DonorDashboard> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Request accepted")),
                   );
-                } catch (e) {
+                } catch (e)                  {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Error: $e")),
                   );

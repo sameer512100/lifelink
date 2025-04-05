@@ -21,13 +21,15 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.lifelink"
-        minSdk = 21 // ✅ Set explicitly for Firebase compatibility
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-        manifestPlaceholders = [ MAPS_API_KEY: project.property("MAPS_API_KEY") ]
-    }
+    applicationId = "com.example.lifelink"
+    minSdk = 21
+    targetSdk = 34
+    versionCode = 1
+    versionName = "1.0"
+
+    manifestPlaceholders["MAPS_API_KEY"] = project.findProperty("MAPS_API_KEY") as String
+}
+
 
     buildTypes {
         release {

@@ -10,6 +10,10 @@ class DonationRequest {
   final String status;
   final String acceptedBy;
   final String rejectedBy;
+  final double latitude;   // ✅ New
+  final double longitude;  // ✅ New
+  final String hospitalId;  // New field for hospital ID
+  final Timestamp createdAt;  // New field for creation time
 
   DonationRequest({
     required this.id,
@@ -21,12 +25,14 @@ class DonationRequest {
     this.status = 'pending',
     this.acceptedBy = '',
     this.rejectedBy = '',
+    this.latitude = 0.0,    // ✅ default to 0.0
+    this.longitude = 0.0,
+    required this.hospitalId,  // Hospital ID
+    required this.createdAt,   // CreatedAt timestamp
   });
 
-  /// ✅ Safely handles both Timestamp and ISO date String from Firestore
   static Timestamp _parseTimestamp(dynamic value) {
     if (value is Timestamp) return value;
-
     if (value is String) {
       try {
         return Timestamp.fromDate(DateTime.parse(value));
@@ -35,11 +41,9 @@ class DonationRequest {
         return Timestamp.now();
       }
     }
-
     return Timestamp.now();
   }
 
-  /// ✅ Converts Firestore document data into DonationRequest object
   factory DonationRequest.fromMap(String id, Map<String, dynamic> data) {
     return DonationRequest(
       id: id,
@@ -51,10 +55,13 @@ class DonationRequest {
       status: data['status']?.toString() ?? 'pending',
       acceptedBy: data['acceptedBy']?.toString() ?? '',
       rejectedBy: data['rejectedBy']?.toString() ?? '',
+      latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
+      hospitalId: data['hospitalId']?.toString() ?? 'Unknown',
+      createdAt: _parseTimestamp(data['createdAt']),
     );
   }
 
-  /// ✅ Upload-safe format for Firestore
   Map<String, dynamic> toMap() {
     return {
       'hospitalName': hospitalName,
@@ -65,9 +72,12 @@ class DonationRequest {
       'status': status,
       'acceptedBy': acceptedBy,
       'rejectedBy': rejectedBy,
+      'latitude': latitude,     // ✅ Include in Firestore
+      'longitude': longitude,
+      'hospitalId': hospitalId,  // Hospital ID
+      'createdAt': createdAt,   // CreatedAt timestamp
     };
   }
 
-  /// 🔍 Optional: JSON format (useful for logs or HTTP requests)
   Map<String, dynamic> toJson() => toMap();
 }
